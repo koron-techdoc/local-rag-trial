@@ -9,6 +9,13 @@ Vim のドキュメントのローカルRAGを構築してみる試み。
 
 ## 準備
 
+-   Python 3.13
+-   CUDA 12.8
+
+var/data を Vim のドキュメントフォルダにリンクする
+
+必要なパッケージ
+
 ```
 $ python -m pip install -U pip
 $ python -m pip install -U torch --index-url https://download.pytorch.org/whl/cu128
@@ -18,7 +25,17 @@ $ python -m pip install -U llama-index-embeddings-huggingface
 $ python -m pip install -U llama-index-llms-huggingface
 ```
 
-data を Vim のドキュメントフォルダにリンクする
+あるいは venv と requirements.txt を使って以下の通り
+
+```
+$ python -m venv venv
+
+# Python for Windowsの場合
+$ source venv/Scripts/activate
+
+$ python -m pip install -U pip
+$ python -m pip install -r requirements-cuda128.txt
+```
 
 ## 実験その1
 
