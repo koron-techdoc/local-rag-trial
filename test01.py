@@ -33,7 +33,7 @@ Settings.llm = HuggingFaceLLM(
 )
 logger.info("loaded LLM model")
 
-documents = SimpleDirectoryReader("data").load_data()
+documents = SimpleDirectoryReader("var/data").load_data()
 logger.info("loaded documents")
 
 index = VectorStoreIndex.from_documents(documents)

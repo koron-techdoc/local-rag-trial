@@ -14,6 +14,7 @@ $ python -m pip install -U pip
 $ python -m pip install -U torch --index-url https://download.pytorch.org/whl/cu128
 $ python -m pip install -U llama-index
 $ python -m pip install -U hf_xet
+$ python -m pip install -U llama-index-embeddings-huggingface
 $ python -m pip install -U llama-index-llms-huggingface
 ```
 
