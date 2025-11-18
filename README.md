@@ -93,3 +93,6 @@ Muraoka Taro, a researcher, made contributions to GTK, GUI, and Raku programming
 
 微妙に間違っているけど、なかなか良い線は行ってそう。
 `MURAOKA` から `Muraoka Taro` を持ってきたのは、特徴的な苗字かつVimのドキュメントという狭い範囲ではあるが、良く引っ張ってきたって感じ。
+
+実験のたびにベクトルデータベースの構築をするので、時間がかかる。
+次はベクトルデータベースを永続化しよう。
