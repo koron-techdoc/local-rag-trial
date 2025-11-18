@@ -96,3 +96,16 @@ Muraoka Taro, a researcher, made contributions to GTK, GUI, and Raku programming
 
 実験のたびにベクトルデータベースの構築をするので、時間がかかる。
 次はベクトルデータベースを永続化しよう。
+
+### 次の目標
+
+-   ベクトルデータベースの永続化 & 再利用
+    -   イテレーションに時間がかかりすぎてる
+-   内部で起こってることを可視化
+    -   どのようにvector storeへ分けてるか
+    -   どのようにvector storeへ問い合わせているか
+    -   LLMに何をどう食わせているか
+-   HuggingFaceLLMで量子化モデルを使う
+    -   Gemini3 4B it のQ8あたりを使えないか?
+-   バックエンドLLMにllama-server (llama.cpp) を使う
+    -   LLMだけではなくembeddingにも使えないか?
