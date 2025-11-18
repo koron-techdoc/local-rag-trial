@@ -21,7 +21,7 @@ data を Vim のドキュメントフォルダにリンクする
 
 ## 実験その1
 
-<http:./test01.py> メモリ上にベクトルDBを配置し、簡単なラグを実施。
+[./test01.py](./test01.py) メモリ上にベクトルDBを配置し、簡単なラグを実施。
 
 <details>
 <summary>How many modes does Vim have?</summary>
