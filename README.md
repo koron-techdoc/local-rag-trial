@@ -100,7 +100,7 @@ Muraoka Taro, a researcher, made contributions to GTK, GUI, and Raku programming
 
 ### 次の目標
 
--   ベクトルデータベースの永続化 & 再利用
+-   ベクトルデータベースの永続化 & 再利用 (実験2で達成)
     -   イテレーションに時間がかかりすぎてる
 -   内部で起こってることを可視化
     -   どのようにvector storeへ分けてるか
@@ -110,3 +110,33 @@ Muraoka Taro, a researcher, made contributions to GTK, GUI, and Raku programming
     -   Gemini3 4B it のQ8あたりを使えないか?
 -   バックエンドLLMにllama-server (llama.cpp) を使う
     -   LLMだけではなくembeddingにも使えないか?
+
+## 実験その2
+
+インデックスの永続化、およびそれを用いたクエリの実験。
+
+-   [./test02\_indexing.py](./test02_indexing.py) Vimのドキュメントをインデクシングし、ディレクトリ (./var/storage) へ永続化する
+-   [./test02\_query.py](./test02_query.py) 永続化されたインデックスストアを読みこみ、クエリーできるようにする
+
+### 使い方
+
+```console
+# 一度だけ実行すればよいい
+$ python test02_indexing.py
+
+$ python -i test02_query.py
+>>> query("YOUR QURY")
+
+# 以下、クエリを変えて何度でも試せる
+```
+
+### 結果・考察
+
+test01.py の時と答えが違う気がする。
+正しくインデックスが永続化されているのか?
+どのようなクエリを投げているのか、疑問が残る。
+次はそのあたりを検証する必要がありそうだ。
+
+毎回ゼロからインデックスを作る必要がなくなり、
+クエリできるまで3分かかっていたのが30秒ほどに短縮されたので、
+当初の目的は達成された。
