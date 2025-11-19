@@ -5,7 +5,7 @@ Vim のドキュメントのローカルRAGを構築してみる試み。
 
 とりあえず使ってみるのは [LlamaIndex][llamaindex]
 
-[llamaindex]:(https://github.com/run-llama/llama_index)
+[llamaindex]:https://github.com/run-llama/llama_index
 
 ## 準備
 
