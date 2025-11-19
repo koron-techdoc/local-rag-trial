@@ -123,12 +123,12 @@ Muraoka Taro, a researcher, made contributions to GTK, GUI, and Raku programming
     -   どのようにvector storeへ分けてるか
     -   どのようにvector storeへ問い合わせているか
     -   LLMに何をどう食わせているか
--   HuggingFaceLLMで量子化モデルを使う
-    -   Gemini3 4B it のQ8あたりを使えないか?
+-   HuggingFaceLLMで量子化モデルを使う (実験 その4 で確認済み)
+    -   Gemini3 4B it のQ8あたりを使えないか? (Q4を使った)
 -   バックエンドLLMにllama-server (llama.cpp) を使う
     -   LLMだけではなくembeddingにも使えないか?
 
-## 実験その2
+## 実験 その2
 
 インデックスの永続化、およびそれを用いたクエリの実験。
 
@@ -158,7 +158,7 @@ test01.py の時と答えが違う気がする。
 クエリできるまで3分かかっていたのが30秒ほどに短縮されたので、
 当初の目的は達成された。
 
-## 実験その3
+## 実験 その3
 
 目的: LlamaIndexがどう振る舞っているかを確認する。
 
@@ -220,3 +220,57 @@ LlamaIndexは以下のフローでRAGを実現していた。
 -   LlamaIndex のRAGにおける振舞いが把握できた
 -   概ね妥当なカスタマイズポイントが存在しそう
 -   インデクシングの時点でクエリに細工できないか?
+
+## 実験 その4
+
+LLMモデルの量子化をし、より大きなモデル google/gemma-3-4b-it でRAGしてみる。
+
+-   [./test04\_q4query.py](./test04_q4query.py) 永続化されたインデックスストアを読みこみ、クエリーできるようにする
+
+使い方は前回までと一緒
+
+```console
+$ python -i test04_q4query.py
+>>> query("YOUR QURY")
+```
+
+### 結果・考察 その4
+
+クエリにめちゃくちゃ時間が掛かるが、出力内容はかなり良いかも。
+量子化で下がるであろう精度を、パラメータ数とコンテキストサイズの増大による要約能力冗長のメリットが凌駕している感じがする。
+
+<details>
+<summary>出力例1</summary>
+
+```
+>>> query("List the names and descriptions of Vim modes")
+
+Vim has seven BASIC modes:
+*Normal* (Normal-mode, command-mode): In Normal mode, you can enter all the normal editor commands.
+*Visual* (Visual-mode): This is like Normal mode, but the movement commands extend a highlighted area. If the 'showmode' option is on "-- VISUAL --" is shown at the bottom of the window.
+*Select* (Select-mode): This looks most like the MS-Windows selection mode. Typing a printable character deletes the selection and starts Insert mode. If the 'showmode' option is on "-- SELECT --" is shown at the bottom of the window.
+*Insert* (Insert-mode): In Insert mode, the text you type is inserted into the buffer. If the 'showmode' option is on "-- INSERT --" is shown at the bottom of the window.
+*Command-line* (Cmdline-mode): In Command-line mode, you can enter one line of text at the bottom of the window.
+*Ex* (Ex-mode): Like Command-line mode, but after entering a command you remain in Ex mode.
+*Terminal-Job* (Terminal-Job mode): Interacting with a job in
+```
+
+</details>
+
+<details>
+<summary>出力例2</summary>
+
+```
+>>> query("List MURAOKA's major contributions in Vim")
+1. GUI with double-byte encoding: a mouse click in left half of double-wide character put the cursor in previous char.
+2. Using double-byte encoding and 'selection' is "exclusive": "vey" and "^Vey" included the character after the word.
+3. When using a double-byte encoding and there is a lead byte at the end of the line, the preceding line would be displayed.  "ga" also showed wrong info.
+4. "gf" didn't include multibyte characters before the cursor properly.
+5. Clicking with the right mouse button in another window started Visual mode, but used the start position of the current window.  Caused ml_get errors when the line number was invalid.  Now stay in the same window.
+6. When 'selection' is "exclusive", "gv" sometimes selected one character fewer.
+7. When 'comments' contains more than one start/middle/end triplet, the optional flags could be mixed up.  Also didn't align the end with the middle part.
+8. Double-right-click in Visual mode didn't update the shown mode.
+9. When the Normal group has a font name, it was
+```
+
+</details>
