@@ -1,3 +1,7 @@
 venv/
 
 var/
+
+__pycache__/
+
+.gradio/

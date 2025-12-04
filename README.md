@@ -274,3 +274,226 @@ Vim has seven BASIC modes:
 ```
 
 </details>
+
+## 実験 その5
+
+各モジュールを入れ替える
+
+*   Vector store: duckdb
+*   Backend: llama-server
+*   UI: Gradio
+
+### duckdb
+
+参考: <https://developers.llamaindex.ai/python/examples/vector_stores/duckdbdemo/>
+
+`pip install duckdb` にはプレコンパイルのwhlが提供されている。
+以下で duckdb パッケージも併せてインストールできる。
+
+```
+$ pip install llama-index-vector-stores-duckdb
+```
+
+インデクシングスクリプトを作成して実行:
+[test05\_indexing+duckdb.py](test05_indexing+duckdb.py)
+
+作られたファイルは33MB。
+サイズからテキストデータ込みであると推定できる。
+作られたテーブルはこんな感じ。
+
+```
+D .schema
+CREATE TABLE documents(node_id VARCHAR PRIMARY KEY, "text" VARCHAR, embedding FLOAT[], metadata_ JSON);
+
+D show documents;
+┌─────────────┬─────────────┬─────────┬─────────┬─────────┬─────────┐
+│ column_name │ column_type │  null   │   key   │ default │  extra  │
+│   varchar   │   varchar   │ varchar │ varchar │ varchar │ varchar │
+├─────────────┼─────────────┼─────────┼─────────┼─────────┼─────────┤
+│ node_id     │ VARCHAR     │ NO      │ PRI     │ NULL    │ NULL    │
+│ text        │ VARCHAR     │ YES     │ NULL    │ NULL    │ NULL    │
+│ embedding   │ FLOAT[]     │ YES     │ NULL    │ NULL    │ NULL    │
+│ metadata_   │ JSON        │ YES     │ NULL    │ NULL    │ NULL    │
+└─────────────┴─────────────┴─────────┴─────────┴─────────┴─────────┘
+
+D select count(*) from documents;
+┌──────────────┐
+│ count_star() │
+│    int64     │
+├──────────────┤
+│     3860     │
+└──────────────┘
+
+D select len(embedding) from documents limit 5;
+┌────────────────┐
+│ len(embedding) │
+│     int64      │
+├────────────────┤
+│            768 │
+│            768 │
+│            768 │
+│            768 │
+│            768 │
+└────────────────┘
+
+D select len(text) from documents limit 5;
+┌─────────────┐
+│ len("text") │
+│    int64    │
+├─────────────┤
+│        4066 │
+│        3721 │
+│        3176 │
+│        3245 │
+│        3510 │
+└─────────────┘
+```
+
+各ファイルは数KB単位のチャンクに分けられ、idを与えられ、
+ベクトル(embedding)が追加されて格納されている。
+
+クエリスクリプトを作成して実行:
+[test05\_query+duckdb.py](./test05_query+duckdb.py)
+
+DuckDBを利用できたが、これがベストかはイマイチ確信がない。
+可搬性、運用実績を考えればDuckDBでも良い
+しかしDuckDBはカラムナーデータベースがベクトルをサポートした製品。
+ベクトルが増えてきた場合、
+もとからベクトルを指向したストアを使ったほうが有利では?
+
+他の選択肢
+
+*   [よく使われているベクトルストア（VectorStore）について紹介します (2023/12)](https://qiita.com/xxyc/items/7c9a24c79e18b1e93b46L)
+*   [Best 17 Vector Databases for 2025 [Top Picks]](https://lakefs.io/blog/best-vector-databases/)
+
+DuckDBにHNSWによるインデックスを追加すればいいだけか?
+いまのllamaindexが使ってるDuckDBのバージョン(1.3, 1.4)ではpersistされたテーブルへのHNSWインデックスは実験実装らしい。
+
+LLMへのqueryにそれなりに時間がかかるので、ベクトルの探索時間についてあまり気にする必要はないかもしれない。
+
+### llama-server backend
+
+1. インデックス作製: embedding を llama-serverベースに変更 → 遅くなるので没
+2. クエリー: LLM を llama-server ベースへ変更 → 速くなるので推奨
+3. llama-server で複数モデルを動かせるか調査 → 1プロセスでは無理(ポートを変えて複数プロセス)
+
+    それ用のwrapperプログラムがあるので本体ではできなさそう。
+    embeddingとLLMで複数プロセスを上げればいいのでは?
+    いっそembeddingの作成も大きめのモデルでやったらどうなる?
+
+embeddingはllamafileを使えばできそう。 <https://github.com/run-llama/llama_index/issues/15303>
+
+<https://developers.llamaindex.ai/python/examples/embeddings/llamafile/>
+
+llama-server の実行方法: 物理バッチサイズ (`-ub`) をデフォルトの512から倍々で 2048 まで増やす必要があった。
+
+```
+$ llama-server -hf ggml-org/embeddinggemma-300M-GGUF --embeddings -c 0 -ub 2048
+```
+
+`llama_index/embeddings/llamafile/base.py` にパッチを当てる。
+いっそクローンを作ってしまった方が良いだろうか?
+
+```
+    def _get_text_embeddings(self, texts: List[str]) -> List[Embedding]:
+
+            ...(snip)...
+
+            #return [output["embedding"] for output in response.json()["results"]]
+            return [output["embedding"][0] for output in response.json()]
+```
+
+ここまでで動き始めたがちょっと遅い。
+おそらく並列度が低い。
+GPU負荷も低め。
+専用のドライバを書いた方が良いかもしれない。
+387回 x 3秒 で約20分かかった。1回あたりは10件。
+要検討。
+
+[test05b\_indexing+llamaserver.py](./test05b_indexing+llamaserver.py)
+
+とりあえず [独自ドライバ](./lib/llamafile_embedding.py) を使うようにした。
+パラレル化は現時点ではしてない。
+
+できてくるベクトルはHuggingFace経由とは若干違う。
+
+Gemma 3 4B を8081で起動。
+
+```
+$ ./llama-server -hf ggml-org/gemma-3-4b-it-GGUF -c 0 -fa on --port 8081
+```
+
+[test05b\_query+llamaserver.py](./test05b_query+llamaserver.py) を作ってLLMも llama-server に繋ぐようにした。
+temperatureを低くし、seedを固定したからか妙に良い結果を出している気がする。
+
+最後に Gemma 3 4B を llama-server で動かし、embedding もそれを使ってみる。
+
+*   [test05c_indexing.py](./test05c_indexing.py)
+
+    普通に遅い。まぁこのまま動かしてみるが…
+
+やっぱなし。あまりにも遅すぎる。19秒 x 380件で2時間くらいにはなりそう。
+現実的ではない。
+
+EmbeddingにHuggingFaceEmbeddingを使い、LLMにllama.cppのllama-serverを使うのもやってみた:
+[test05d\_query\_hfembed+llamaserver.py](test05d_query_hfembed+llamaserver.py)
+
+#### ここまでの考察
+
+*   LLMに llama-server を用いるのは速度や取り回しの観点から有利
+    *   入れ替えやすい
+    *   量子化モデルのおかげで小さく速い
+*   Embedding に llama-server を用いるのは速度の観点からいまいち
+    *   Embeddingリクエストがデフォルトでは並列化されないために遅い
+*   同じ EmbeddingGemma 3 を使っても、HFかllama-server --embeddingかで、得られるベクトルが微妙に違う
+
+### UI: Gradio
+
+GradioでUIを付けた: [test05e\_query\_webui.py](test05e_query_webui.py)
+
+*   インデックスにはDuckDB
+*   embeddingには HuggingFaceEmbedding で `google/embeddinggemma-300m`
+*   LLMには llama.cpp の llama-server
+
+    速度の観点から HuggingFaceLLM を使うより10倍以上速い
+
+*   llama-server は `google/gemma-3-4b-it-qat-q4_0-gguf`
+
+    1Bでは性能不足。最低でも4Bがあったほうがよい。
+    またこのモデルは量子化を意識してトレーニングされてる (QAT: Quantization Aware Trained)。
+
+    起動方法:
+
+    ```
+    $ export HF_TOKEN="<YOUR GRANTED TOKEN>"
+
+    $ llama-server -hf google/gemma-3-4b-it-qat-q4_0-gguf -c 0 -fa on
+    ```
+
+### まとめ
+
+*   RAGを構成する各モジュールを差し替えてみた
+
+    結果以下の組み合わせが現状ではベターなことが判明した
+
+    *   Embeddingモデルは HuggingFaceEmbedding 経由で [`google/embeddinggemma-300m`](https://huggingface.co/google/embeddinggemma-300m)
+
+        llama.cpp の `llama-server --embedding` 経由という手段もあるが、並列化がされておらず遅い。
+
+    *   ベクターストアは DuckDB
+
+        DuckDBのベクトルに対するインデックスは、
+        HNSWが未実装もしくは利用不可のため、弱い。
+        数が多くなり遅くなるようであれば別の選択肢を検討したほうが良い。
+
+    *   LLMは llama.cpp の llama-server 経由で [`google/gemma-3-4b-it-qat-q4_0-gguf`](https://huggingface.co/google/gemma-3-4b-it-qat-q4_0-gguf)
+
+        RAGとして利用するには、ある程度以上の能力を持つLLMが必須。
+        Gemma 3 1Bでは明らかに能力が足りておらず、4Bであれば許容できそう。
+        しかしHuggingFaceLLMによる生のBF16は1件あたり90秒くらいと遅い。
+        Gemma 3 4BはQAT(量子化を意識したトレーニング)版をGoogleが提供しており、
+        これを利用すれば10秒程度に短縮できたので、これを採用した。
+
+    *   Web UIは Gradio
+
+        シンプルであるため、ちょっと試す用途には必要・充分
