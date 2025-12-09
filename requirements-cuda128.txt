@@ -6,3 +6,4 @@ llama-index-embeddings-huggingface
 llama-index-llms-huggingface
 
 llama-index-vector-stores-duckdb
+llama-index-llms-llamafile

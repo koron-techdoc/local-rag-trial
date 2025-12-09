@@ -1,0 +1,8 @@
+gradio
+llama-index
+llama-index-embeddings-huggingface
+llama-index-vector-stores-duckdb
+llama-index-llms-huggingface
+#llama-index-llms-llamafile
+hf_xet
+torch
