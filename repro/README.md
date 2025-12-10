@@ -248,9 +248,6 @@ EmbeddingやLLMのモデルを変更したり、ベクトルストアを変更�
 既に見てきたとおり、Python + CPUだけでRAGを利用することはできるが、快適とは言い難い。
 そのため本節では torch ライブラリを GPU 対応のモノに入れ替える方法を紹介する。
 
-これにより特にインデックス構築(Embedding)が約3分で終わるほどに速くなる。
-LLMのほうは回答によっては約15秒くらいに速くなるが、遅いままの場合もありうる。
-
 入れ替えは簡単で、プラットフォームに応じてコマンドを1つ実行するだけ。
 たとえばWindowsで CUDA 12.8 を利用するなら、以下のコマンドを実行する。
 
@@ -270,6 +267,9 @@ $ python -m pip install -U torch --index-url https://download.pytorch.org/whl/cu
 リンク先にかかれたインストールコマンドに含まれたtorchvisionは、
 今回のローカルRAGシステムでは不要なので適宜読み替えること。
 
+これにより特にインデックス構築(Embedding)が約3分で終わるほどに速くなる。
+LLMのほうは回答によっては約15秒くらいに速くなるが、遅いままの場合もありうる。
+
 ### LLLMにllama.cppのllama-serverを使う
 
 RAGで使うLLMには性能の良いモデルが望ましい。
@@ -280,21 +280,21 @@ llama.cpp には llama-server というLLM推論のためのHTTPサーバーが�
 
 #### llama.cpp を利用するための準備
 
-##### llama.cpp のインストール
+**llama.cpp のインストール**
 
 llama.cpp には一部のプラットフォーム向けにコンパイル済みバイナリが用意されている。
 このバイナリはほぼ毎日ビルドされており
 <https://github.com/ggml-org/llama.cpp/releases/latest>
 から最新のプラットフォーム向けの最新バイナリをダウンロードできる。
 
-特にWindows版はアクセラレーションの種類も幅広く用意されており、展開してすぐに使える。
+特にWindows版はアクセラレーションの種類も幅広く用意されており、展開して即使える。
 
 Linux版は Ubuntu 用に CPU と Vulkan しか提供されていない。
 Ubuntu 以外のディストリで動くかは不明。
 [公式のビルドガイド](https://github.com/ggml-org/llama.cpp/blob/master/docs/build.md) に従えば、
 自身でビルドするのも比較的容易なので、そちらを参照のこと。
 
-##### HuggingFace トークンを設定
+**HuggingFace トークンを設定**
 
 [HuggingFace 関連の設定](#huggingface-関連の設定) で取得したトークンを
 llama.cpp 用に環境変数 `HF_TOKEN` で設定する。
@@ -307,7 +307,7 @@ $ export HF_TOKEN=hf_xxxxxxxxx
 
 `hf_xxxxxxxxx` 部分は自身のトークンで置き換える。
 
-##### Python モジュールの追加インストール
+**Python モジュールの追加インストール**
 
 llama.cppをLLMとして使うために、追加のPythonモジュールをインストールする
 
@@ -315,7 +315,7 @@ llama.cppをLLMとして使うために、追加のPythonモジュールをイ�
 $ python -m pip install llama-index-llms-llamafile
 ```
 
-##### Gated models のアクセス許可を得る
+**Gated models のアクセス許可を得る**
 
 llama.cpp では以下のモデルを利用する。あらかじめ Gated models のアクセス許可を得る。
 
@@ -381,4 +381,5 @@ HuggingFaceLLMを使った querywebui.py とllama-serverを使った querywebui2
  logger.info("LLM model ready")
 
  # 検索エンジンを作成
+#llama-index-llms-llamafile
 ```
