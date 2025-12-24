@@ -13,7 +13,8 @@ from llama_index.core import Settings
 from llama_index.vector_stores.duckdb import DuckDBVectorStore
 from llama_index.core import VectorStoreIndex
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
-from llama_index.llms.llamafile import Llamafile
+#from llama_index.llms.llamafile import Llamafile
+from llama_index.llms.lmstudio import LMStudio
 import gradio as gr
 logger.info("imported packages")
 
@@ -31,7 +32,9 @@ index = VectorStoreIndex.from_vector_store(vector_store)
 logger.info("index ready")
 
 # LLM モデルを読みこむ
-Settings.llm = Llamafile(base_url="http://localhost:8080", temperature=0, seed=0)
+#Settings.llm = Llamafile(base_url="http://localhost:8080", temperature=0, seed=0)
+#Settings.llm = LMStudio(model_name="google/gemma-3-4b", request_timeout=120, temperature=0, seed=0)
+Settings.llm = LMStudio(model_name="qwen/qwen3-vl-4b", request_timeout=120, temperature=0, seed=0)
 logger.info("LLM model ready")
 
 # 検索エンジンを作成
