@@ -98,7 +98,7 @@ from llama_index.llms.lmstudio import LMStudio
 Settings.llm = LMStudio(model_name="qwen/qwen3-vl-4b", request_timeout=120, temperature=0, seed=0)
 ```
 
-これに伴い、追加のモジュールインストールが必要となる。
+これに伴い、追加のモジュールのインストールが必要となる。
 
 ```
 pip install llama-index-llms-lmstudio
